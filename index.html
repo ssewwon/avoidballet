@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avoid Game with Faster Bullets</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            overflow: hidden; /* 화면 넘치는 부분 숨기기 */
+        }
+        #game-container {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            border: 2px solid #333;
+            background-color: #fff;
+        }
+        #player {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            background-color: blue;
+            border-radius: 50%;
+        }
+        .enemy {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: red;
+            border-radius: 50%;
+        }
+        .bullet {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="player"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameContainer = document.getElementById('game-container');
+            const player = document.getElementById('player');
+            let score = 0;
+            let timeLeft = 30; // 초기 시간 설정 (초)
+            const enemies = []; // 적들을 담을 배열
+            const bullets = []; // 총알들을 담을 배열
+
+            // 플레이어의 이동
+            gameContainer.addEventListener('mousemove', function(event) {
+                const x = event.clientX - gameContainer.offsetLeft;
+                const y = event.clientY - gameContainer.offsetTop;
+                player.style.left = `${x}px`;
+                player.style.top = `${y}px`;
+            });
+
+            // 적 생성 및 게임 루프
+            const gameLoop = setInterval(function() {
+                if (timeLeft <= 0) {
+                    clearInterval(gameLoop);
+                    alert(`Game Over! Your score: ${score}`);
+                    resetGame();
+                } else {
+                    spawnEnemy();
+                    moveEnemies();
+                    moveBullets();
+                    checkCollision();
+                    timeLeft--;
+                    updateTimer();
+                }
+            }, 1000);
+
+            // 적 생성 함수
+            function spawnEnemy() {
+                const enemy = document.createElement('div');
+                enemy.classList.add('enemy');
+                enemy.style.left = `${Math.random() * (gameContainer.offsetWidth - 30)}px`;
+                enemy.style.top = '-30px'; // 맨 위에서 생성
+                gameContainer.appendChild(enemy);
+                enemies.push(enemy);
+            }
+
+            // 적 이동 함수
+            function moveEnemies() {
+                enemies.forEach(function(enemy) {
+                    const currentTop = parseInt(enemy.style.top);
+                    enemy.style.top = `${currentTop + 5}px`; // 적의 이동 속도 설정
+                });
+            }
+
+            // 총알 생성 함수
+            function fireBullet() {
+                const bullet = document.createElement('div');
+                bullet.classList.add('bullet');
+                const playerPos = player.getBoundingClientRect();
+                bullet.style.left = `${playerPos.left + playerPos.width / 2 - 5}px`; // 플레이어 중앙에서 발사
+                bullet.style.top = `${playerPos.top}px`;
+                gameContainer.appendChild(bullet);
+                bullets.push(bullet);
+            }
+
+            // 총알 이동 함수
+            function moveBullets() {
+                bullets.forEach(function(bullet, index) {
+                    const currentTop = parseInt(bullet.style.top);
+                    bullet.style.top = `${currentTop - 20}px`; // 총알의 이동 속도 설정 (보다 빠르게)
+                    // 화면을 벗어나면 총알 제거
+                    if (currentTop < 0) {
+                        bullets.splice(index, 1);
+                        gameContainer.removeChild(bullet);
+                    }
+                });
+            }
+
+            // 충돌 체크 함수
+            function checkCollision() {
+                enemies.forEach(function(enemy, eIndex) {
+                    const enemyRect = enemy.getBoundingClientRect();
+                    bullets.forEach(function(bullet, bIndex) {
+                        const bulletRect = bullet.getBoundingClientRect();
+                        if (isCollision(enemyRect, bulletRect)) {
+                            enemies.splice(eIndex, 1); // 충돌한 적 제거
+                            bullets.splice(bIndex, 1); // 충돌한 총알 제거
+                            gameContainer.removeChild(enemy);
+                            gameContainer.removeChild(bullet);
+                            score++;
+                        }
+                    });
+                    const playerRect = player.getBoundingClientRect();
+                    if (isCollision(playerRect, enemyRect)) {
+                        gameOver();
+                    }
+                });
+            }
+
+            // 충돌 여부 확인 함수
+            function isCollision(rect1, rect2) {
+                return !(rect1.right < rect2.left ||
+                         rect1.left > rect2.right ||
+                         rect1.bottom < rect2.top ||
+                         rect1.top > rect2.bottom);
+            }
+
+            // 게임 종료 처리
+            function gameOver() {
+                clearInterval(gameLoop);
+                alert(`Game Over! Your score: ${score}`);
+                resetGame();
+            }
+
+            // 타이머 업데이트 함수
+            function updateTimer() {
+                document.getElementById('timer').textContent = `Time left: ${timeLeft} seconds`;
+            }
+
+            // 게임 초기화 함수
+            function resetGame() {
+                score = 0;
+                timeLeft = 330;
+                enemies.forEach(function(enemy) {
+                    gameContainer.removeChild(enemy);
+                });
+                bullets.forEach(function(bullet) {
+                    gameContainer.removeChild(bullet);
+                });
+                enemies.length = 0;
+                bullets.length = 0;
+                updateTimer();
+                gameLoop = setInterval(gameLoop, 1000);
+            }
+
+            // 게임 시작
+            fireBullet();
+        });
+    </script>
+</body>
+</html>
